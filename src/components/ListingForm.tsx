@@ -17,7 +17,6 @@ import MediaUploader from "@/components/MediaUploader";
 import FairPriceBadge from "@/components/FairPriceBadge";
 import { fairness, VERDICT_META } from "@/lib/fairPrice";
 import {
-  parseMedia,
   serializeMedia,
   firstImage,
   firstVideo,

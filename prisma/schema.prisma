@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("SEEKER")
+  listings     Listing[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Listing {
+  id                String   @id @default(cuid())
+  title             String
+  description       String?
+  city              String
+  area              String
+  roomType          String
+  sizeSqft          Float
+  floor             Int
+  bedrooms          Int
+  bathrooms         Int
+  furnished         Boolean  @default(false)
+  waterSupply       Boolean  @default(true)
+  parking           Boolean  @default(false)
+  attachedBathroom  Boolean  @default(false)
+  wifiReady         Boolean  @default(false)
+  kitchen           Boolean  @default(false)
+  balcony           Boolean  @default(false)
+  latitude          Float
+  longitude         Float
+  rent              Int
+  predictedRent     Int?
+  photoUrl          String?
+  mediaUrls         String   @default("[]")
+  available         Boolean  @default(true)
+  owner             User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId           String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([city])
+  @@index([area])
+  @@index([roomType])
+}

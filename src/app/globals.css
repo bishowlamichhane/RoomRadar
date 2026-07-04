@@ -1,0 +1,95 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  --color-primary: #0e6e6e;
+  --color-primary-600: #0b5757;
+  --color-primary-tint: #e1f0ef;
+  --color-ink: #171a1c;
+  --color-muted: #6b7378;
+  --color-canvas: #eff1ed;
+  --color-warm: #ea8b47;
+  --color-warm-tint: #fceadb;
+}
+
+@theme inline {
+  --color-primary: #0e6e6e;
+  --color-primary-600: #0b5757;
+  --color-primary-tint: #e1f0ef;
+  --color-ink: #171a1c;
+  --color-muted: #6b7378;
+  --color-canvas: #eff1ed;
+  --color-warm: #ea8b47;
+  --color-warm-tint: #fceadb;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Fraunces", Georgia, ui-serif, serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+}
+
+html,
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter",
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: "Fraunces", Georgia, ui-serif, serif;
+  letter-spacing: -0.02em;
+}
+
+.mono {
+  font-family: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+.hero-gradient {
+  background:
+    radial-gradient(
+      ellipse 60% 55% at 20% 40%,
+      #ffd7a3 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 80% 60% at 90% 20%,
+      #ea8b47 0%,
+      transparent 55%
+    ),
+    linear-gradient(180deg, #f3a166 0%, #b95a2a 100%);
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(23, 26, 28, 0.04);
+  border: 1px solid rgba(23, 26, 28, 0.06);
+}
+
+.leaflet-container {
+  border-radius: 16px;
+  z-index: 0;
+}
+
+@keyframes rr-sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.radar-sweep {
+  animation: rr-sweep 4s linear infinite;
+}
+
+@keyframes rr-ping {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+.radar-ping {
+  animation: rr-ping 3.2s ease-out infinite;
+}

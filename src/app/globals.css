@@ -36,6 +36,13 @@ body {
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter",
     "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  color-scheme: light;
+}
+
+/* Force readable native <option> lists even when OS is in dark mode */
+option {
+  background-color: #ffffff;
+  color: var(--color-ink);
 }
 
 .font-display {

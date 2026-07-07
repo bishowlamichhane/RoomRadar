@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { listListings } from "@/controllers/listingController";
 import ListingCard from "@/components/ListingCard";
 import HeroSearch from "@/components/HeroSearch";
+import RadarControlRoom from "@/components/radar/RadarControlRoom";
 import { npr } from "@/lib/format";
 import { auth } from "@/lib/auth";
 
@@ -67,6 +68,23 @@ export default async function HomePage() {
             <Stat value="ML" label="Powered pricing" />
           </div>
         </div>
+      </section>
+
+      {/* Live control room */}
+      <section className="max-w-7xl mx-auto px-5 mt-14">
+        <div className="flex items-end justify-between mb-5">
+          <div>
+            <div className="mono">Live · Valley rent radar</div>
+            <h2 className="font-display text-3xl md:text-4xl font-semibold text-[color:var(--color-ink)]">
+              The market, scored in real time
+            </h2>
+          </div>
+          <span className="hidden md:inline-flex items-center gap-2 text-xs mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            MODEL ONLINE
+          </span>
+        </div>
+        <RadarControlRoom />
       </section>
 
       {/* Featured */}

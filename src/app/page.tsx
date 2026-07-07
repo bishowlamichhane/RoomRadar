@@ -17,41 +17,53 @@ export default async function HomePage() {
 
   return (
     <div className="bg-[color:var(--color-canvas)]">
-      {/* Hero */}
-      <section className="max-w-7xl mx-auto px-5 pt-8">
-        <div className="rounded-3xl overflow-hidden hero-gradient relative">
-          <div className="absolute inset-0 opacity-25 pointer-events-none">
-            <svg viewBox="0 0 800 400" className="w-full h-full">
-              <circle cx="400" cy="200" r="70" fill="none" stroke="white" strokeWidth="1" />
-              <circle cx="400" cy="200" r="140" fill="none" stroke="white" strokeWidth="1" />
-              <circle cx="400" cy="200" r="210" fill="none" stroke="white" strokeWidth="1" />
-              <line x1="400" y1="20" x2="400" y2="380" stroke="white" strokeWidth="1" />
-              <line x1="20" y1="200" x2="780" y2="200" stroke="white" strokeWidth="1" />
-            </svg>
-          </div>
-          <div className="relative px-6 md:px-14 pt-14 pb-10 text-white">
-            <span className="inline-flex items-center gap-2 text-xs bg-white/25 backdrop-blur rounded-full px-3 py-1.5 mb-6">
-              ✦ ML fair-price on every listing
-            </span>
-            <h1 className="font-display text-4xl md:text-6xl leading-[1.05] font-semibold max-w-3xl">
-              Rent a room in the Valley,
-              <br />
-              at a price you can trust.
-            </h1>
-            <p className="mt-4 text-white/85 max-w-2xl text-base md:text-lg">
-              Thousands of verified rooms across Kathmandu, Lalitpur & Bhaktapur —
-              scored in real time by our fair-rent model.
-            </p>
+      {/* Hero — full-width live map as background, copy overlaid on the left */}
+      <section className="relative isolate overflow-hidden min-h-[600px] md:min-h-[720px] flex flex-col">
+        {/* Live map fills the background */}
+        <div className="absolute inset-0 z-0">
+          <RadarControlRoom panel="map" heroMode />
+        </div>
 
-            <div className="mt-10">
-              <HeroSearch />
-              <div className="mt-5 flex flex-wrap gap-2 justify-center">
+        {/* Horizontal scrim — kept light so the map, sweep cone and animated
+            pips stay clearly visible. Text contrast is handled by stronger
+            drop-shadows on the copy itself. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 z-[10] pointer-events-none bg-gradient-to-r from-[#0d1414]/55 via-[#0d1414]/15 to-transparent"
+        />
+        {/* Subtle bottom shadow that grounds the stats strip only. */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 h-32 z-[10] pointer-events-none bg-gradient-to-t from-[#0d1414]/45 to-transparent"
+        />
+
+        {/* Hero copy + search — constrained to max-w-7xl inner column, left-aligned */}
+        <div className="relative z-[20] flex-1 flex items-center">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-14 py-10 pt-16 sm:pt-20 pointer-events-none text-white">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-2 text-xs bg-white/15 backdrop-blur border border-white/20 rounded-full px-3 py-1.5 mb-6 pointer-events-auto">
+                ✦ ML fair-price on every listing
+              </span>
+              <h1 className="font-display text-3xl sm:text-4xl md:text-6xl leading-[1.05] font-semibold [text-shadow:0_2px_12px_rgba(0,0,0,0.55),0_6px_28px_rgba(0,0,0,0.4)]">
+                Rent a room in the Valley,
+                <br />
+                at a price you can trust.
+              </h1>
+              <p className="mt-4 text-white/95 text-sm sm:text-base md:text-lg [text-shadow:0_1px_8px_rgba(0,0,0,0.6)]">
+                Thousands of verified rooms across Kathmandu, Lalitpur &
+                Bhaktapur — scored in real time by our fair-rent model.
+              </p>
+
+              <div className="mt-8 sm:mt-10 pointer-events-auto">
+                <HeroSearch />
+              </div>
+              <div className="mt-5 flex flex-wrap gap-2 pointer-events-auto">
                 {["Baneshwor", "Jhamsikhel", "Kupondole", "Suryabinayak", "Thamel"].map(
                   (q) => (
                     <Link
                       key={q}
                       href={`/listings?area=${encodeURIComponent(q)}`}
-                      className="text-xs text-white bg-white/15 border border-white/30 hover:bg-white/25 rounded-full px-3.5 py-1.5"
+                      className="text-xs text-white bg-white/10 border border-white/30 hover:bg-white/25 backdrop-blur rounded-full px-3.5 py-1.5"
                     >
                       {q}
                     </Link>
@@ -60,9 +72,12 @@ export default async function HomePage() {
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="relative bg-black/60 backdrop-blur px-6 md:px-14 py-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-white">
-            <Stat value={`${listings.length}+`} label="Seeded listings" />
+        {/* Stats strip at the bottom — full-bleed bar, content constrained */}
+        <div className="relative z-[20] bg-black/70 backdrop-blur border-t border-white/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-14 py-5 sm:py-6 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-white">
+            <Stat value={`${listings.length}+`} label="Live listings" />
             <Stat value="95%" label="Fair-price accuracy" />
             <Stat value="3" label="Valley cities" />
             <Stat value="ML" label="Powered pricing" />
@@ -70,25 +85,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Live control room */}
-      <section className="max-w-7xl mx-auto px-5 mt-14">
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <div className="mono">Live · Valley rent radar</div>
-            <h2 className="font-display text-3xl md:text-4xl font-semibold text-[color:var(--color-ink)]">
-              The market, scored in real time
-            </h2>
-          </div>
-          <span className="hidden md:inline-flex items-center gap-2 text-xs mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            MODEL ONLINE
-          </span>
-        </div>
-        <RadarControlRoom />
-      </section>
-
       {/* Featured */}
-      <section className="max-w-7xl mx-auto px-5 mt-16">
+      <section className="max-w-7xl mx-auto px-3 sm:px-5 mt-12 sm:mt-16">
         <div className="flex items-end justify-between mb-6">
           <div>
             <div className="mono">Handpicked</div>
@@ -104,7 +102,7 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 md:grid-cols-3">
           {featured.map((l) => (
             <ListingCard key={l.id} listing={l} />
           ))}
@@ -112,7 +110,7 @@ export default async function HomePage() {
       </section>
 
       {/* Fair-price section */}
-      <section className="max-w-7xl mx-auto px-5 mt-20">
+      <section className="max-w-7xl mx-auto px-3 sm:px-5 mt-14 sm:mt-20">
         <div className="grid gap-10 md:grid-cols-2 items-center">
           <div>
             <div className="mono">Signature feature</div>
@@ -170,8 +168,8 @@ export default async function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="max-w-7xl mx-auto px-5 mt-20 mb-24">
-        <div className="rounded-3xl bg-[color:var(--color-ink)] text-white p-10 md:p-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <section className="max-w-7xl mx-auto px-3 sm:px-5 mt-14 sm:mt-20 mb-16 sm:mb-24">
+        <div className="rounded-2xl md:rounded-3xl bg-[color:var(--color-ink)] text-white p-6 sm:p-10 md:p-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <div className="mono text-white/60">For owners</div>
             <h3 className="font-display text-3xl md:text-4xl font-semibold mt-1">

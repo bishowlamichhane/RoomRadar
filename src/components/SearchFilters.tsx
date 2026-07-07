@@ -45,7 +45,7 @@ export default function SearchFilters({
   return (
     <form onSubmit={submit} className="card p-4 md:p-5">
       <div
-        className={`grid gap-3 ${compact ? "md:grid-cols-4" : "md:grid-cols-6"}`}
+        className={`grid gap-3 grid-cols-2 ${compact ? "md:grid-cols-4" : "md:grid-cols-6"}`}
       >
         <div className="flex flex-col">
           <label className="mono mb-1">City</label>
@@ -126,6 +126,7 @@ export default function SearchFilters({
           variant="primary"
           size="lg"
           loading={isPending}
+          className="col-span-2 md:col-span-1 justify-center"
         >
           Search
         </Button>

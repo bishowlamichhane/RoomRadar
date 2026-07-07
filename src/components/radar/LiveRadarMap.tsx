@@ -2,7 +2,8 @@
 
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { npr } from "@/lib/format";
 import { VERDICT_TONE, VERDICT_LABEL, type RadarPoint } from "./types";
 
@@ -63,18 +64,28 @@ export type LiveRadarMapProps = {
   revealed: RadarPoint[];
   current: RadarPoint | null;
   reducedMotion: boolean;
+  /** Wrapper class controls sizing/border. Default gives it a fixed height. */
+  className?: string;
+  /** Suppress the floating "just detected" card stack (used in hero mode). */
+  hideCards?: boolean;
 };
+
+const DEFAULT_WRAPPER = "w-full h-[420px] md:h-[460px]";
 
 export default function LiveRadarMap({
   revealed,
   current,
   reducedMotion,
+  className,
+  hideCards,
 }: LiveRadarMapProps) {
+  const router = useRouter();
+  const go = (id: string) => router.push(`/listings/${id}`);
   // Rolling stack of the last ~3 "just detected" cards
   const cards = useMemo(() => revealed.slice(-3).reverse(), [revealed]);
 
   return (
-    <div className="radar-panel relative w-full h-[420px] md:h-[460px]">
+    <div className={`radar-panel relative isolate ${className ?? DEFAULT_WRAPPER}`}>
       {/* faint concentric radar rings overlay */}
       <div
         aria-hidden
@@ -135,6 +146,7 @@ export default function LiveRadarMap({
             point={p}
             reducedMotion={reducedMotion}
             isCurrent={current?.id === p.id}
+            onClick={() => go(p.id)}
           />
         ))}
       </MapContainer>
@@ -149,20 +161,24 @@ export default function LiveRadarMap({
         </span>
       </div>
 
-      {/* Just-detected floating card stack */}
-      <div
-        aria-hidden={false}
-        className="absolute right-3 top-11 md:top-12 z-[500] flex flex-col gap-2 w-[240px] md:w-[260px] pointer-events-none"
-      >
-        {cards.map((p, i) => (
-          <JustDetectedCard
-            key={`${p.id}-${i}`}
-            point={p}
-            fade={i > 0}
-            reducedMotion={reducedMotion}
-          />
-        ))}
-      </div>
+      {/* Just-detected floating card stack — only rendered from lg+ so it
+          never fights hero-mode copy for horizontal space on phones/tablets. */}
+      {!hideCards && (
+        <div
+          aria-hidden={false}
+          className="absolute right-3 top-11 md:top-12 z-[500] hidden lg:flex flex-col gap-2 w-[260px]"
+        >
+          {cards.map((p, i) => (
+            <JustDetectedCard
+              key={`${p.id}-${i}`}
+              point={p}
+              fade={i > 0}
+              reducedMotion={reducedMotion}
+              onClick={() => go(p.id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -171,10 +187,12 @@ function PipMarker({
   point,
   reducedMotion,
   isCurrent,
+  onClick,
 }: {
   point: RadarPoint;
   reducedMotion: boolean;
   isCurrent: boolean;
+  onClick: () => void;
 }) {
   const tone = VERDICT_TONE[point.verdict];
   // Regenerate icon so animation replays for the "current" pip; other pips keep a stable icon.
@@ -184,29 +202,38 @@ function PipMarker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [iconKey, tone, reducedMotion],
   );
-  return <Marker position={[point.lat, point.lng]} icon={icon} />;
+  return (
+    <Marker
+      position={[point.lat, point.lng]}
+      icon={icon}
+      eventHandlers={{ click: onClick }}
+    />
+  );
 }
 
 function JustDetectedCard({
   point,
   fade,
   reducedMotion,
+  onClick,
 }: {
   point: RadarPoint;
   fade: boolean;
   reducedMotion: boolean;
+  onClick: () => void;
 }) {
   const tone = VERDICT_TONE[point.verdict];
-  const ref = useRef<HTMLDivElement>(null);
   return (
-    <div
-      ref={ref}
-      className={`${reducedMotion ? "" : "radar-card"} rounded-2xl overflow-hidden border shadow-lg transition-opacity duration-700 ${fade ? "opacity-60" : "opacity-100"}`}
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${reducedMotion ? "" : "radar-card"} text-left rounded-2xl overflow-hidden border shadow-lg transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 cursor-pointer w-full ${fade ? "opacity-60" : "opacity-100"}`}
       style={{
         background: "rgba(13, 20, 20, 0.92)",
         borderColor: "rgba(255,255,255,0.08)",
         backdropFilter: "blur(6px)",
       }}
+      aria-label={`Open ${point.title}`}
     >
       <div className="flex gap-3 p-2.5">
         <div
@@ -249,6 +276,6 @@ function JustDetectedCard({
           </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 }

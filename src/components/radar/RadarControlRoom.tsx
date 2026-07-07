@@ -5,7 +5,7 @@ import RadarMapLoader from "./RadarMapLoader";
 import MLTelemetry from "./MLTelemetry";
 import type { RadarModel, RadarPayload, RadarPoint } from "./types";
 
-const REVEAL_MS = 1600;
+const REVEAL_MS = 3400;
 const MAX_ON_MAP = 18;
 
 function shuffle<T>(arr: T[]): T[] {
@@ -17,7 +17,25 @@ function shuffle<T>(arr: T[]): T[] {
   return out;
 }
 
-export default function RadarControlRoom() {
+export type RadarControlRoomProps = {
+  /**
+   * Which slice of the radar to render.
+   *  - "map"       → just the LiveRadarMap (used on the landing page)
+   *  - "telemetry" → just the ML telemetry side card (used on /admin)
+   *  - "both"      → the original two-column control room
+   */
+  panel?: "map" | "telemetry" | "both";
+  /**
+   * When true, the map fills its parent (no fixed height) and drops the
+   * floating "just detected" cards so hero content can sit on top cleanly.
+   */
+  heroMode?: boolean;
+};
+
+export default function RadarControlRoom({
+  panel = "both",
+  heroMode = false,
+}: RadarControlRoomProps) {
   const [payload, setPayload] = useState<RadarPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<RadarPoint[]>([]);
@@ -84,36 +102,40 @@ export default function RadarControlRoom() {
 
   const meta: RadarModel | null = useMemo(() => payload?.model ?? null, [payload]);
 
+  const mapEl = (
+    <RadarMapLoader
+      revealed={revealed}
+      current={current}
+      reducedMotion={reducedMotion}
+      className={heroMode ? "w-full h-full" : undefined}
+    />
+  );
+
+  const telemetryEl = error ? (
+    <div className="radar-panel p-4 text-[12px] mono text-red-300">
+      Radar offline: {error}
+    </div>
+  ) : meta ? (
+    <MLTelemetry
+      revealed={revealed}
+      current={current}
+      meta={meta}
+      scanned={scanned}
+      reducedMotion={reducedMotion}
+    />
+  ) : (
+    <div className="radar-panel p-4 text-[12px] mono text-white/50">
+      Initializing model telemetry…
+    </div>
+  );
+
+  if (panel === "map") return mapEl;
+  if (panel === "telemetry") return telemetryEl;
+
   return (
     <div className="grid gap-4 md:gap-5 md:grid-cols-5">
-      <div className="md:col-span-3">
-        <RadarMapLoader
-          revealed={revealed}
-          current={current}
-          reducedMotion={reducedMotion}
-        />
-      </div>
-      <div className="md:col-span-2">
-        {error && (
-          <div className="radar-panel p-4 text-[12px] mono text-red-300">
-            Radar offline: {error}
-          </div>
-        )}
-        {!error && meta && (
-          <MLTelemetry
-            revealed={revealed}
-            current={current}
-            meta={meta}
-            scanned={scanned}
-            reducedMotion={reducedMotion}
-          />
-        )}
-        {!error && !meta && (
-          <div className="radar-panel p-4 text-[12px] mono text-white/50">
-            Initializing model telemetry…
-          </div>
-        )}
-      </div>
+      <div className="md:col-span-3">{mapEl}</div>
+      <div className="md:col-span-2">{telemetryEl}</div>
     </div>
   );
 }

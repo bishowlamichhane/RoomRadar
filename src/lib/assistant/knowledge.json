@@ -1,0 +1,180 @@
+{
+  "meta": {
+    "assistantName": "Radar Assistant",
+    "disclaimer": "Rule-based helper — matches your question against a curated knowledge base. No AI service.",
+    "creditLimit": 10
+  },
+  "areas": {
+    "Kathmandu": ["Baneshwor","Koteshwor","Kalanki","Chabahil","Baluwatar","Maharajgunj","Kirtipur","Balaju","Gongabu","Samakhusi","Naxal","Thamel"],
+    "Lalitpur": ["Kupondole","Jhamsikhel","Pulchowk","Satdobato","Lagankhel","Imadol","Ekantakuna","Sanepa","Bhaisepati"],
+    "Bhaktapur": ["Suryabinayak","Kamalbinayak","Sallaghari","Dudhpati","Katunje","Sipadol","Thimi","Gatthaghar"]
+  },
+  "priceBands": {
+    "Single Room": "Rs 5,000–12,000 / month",
+    "1BHK": "Rs 10,000–20,000 / month",
+    "2BHK": "Rs 16,000–32,000 / month",
+    "Flat": "Rs 22,000–55,000 / month",
+    "Hostel": "Rs 6,000–13,000 / month (per seat)"
+  },
+  "areaTiers": {
+    "Kathmandu": {
+      "premium": ["Naxal", "Thamel", "Baluwatar", "Maharajgunj"],
+      "mid": ["Baneshwor", "Chabahil", "Samakhusi", "Gongabu", "Balaju"],
+      "budget": ["Kirtipur", "Kalanki", "Koteshwor"]
+    },
+    "Lalitpur": {
+      "premium": ["Jhamsikhel", "Sanepa"],
+      "mid": ["Kupondole", "Pulchowk", "Lagankhel"],
+      "budget": ["Satdobato", "Imadol", "Ekantakuna", "Bhaisepati"]
+    },
+    "Bhaktapur": {
+      "premium": [],
+      "mid": ["Suryabinayak", "Kamalbinayak"],
+      "budget": ["Sallaghari", "Dudhpati", "Katunje", "Sipadol", "Thimi", "Gatthaghar"]
+    }
+  },
+  "intents": [
+    {
+      "id": "greeting",
+      "keywords": ["hi","hello","hey","namaste","yo","good morning","good evening","hola"],
+      "answer": "Namaste! I'm the Radar Assistant. Ask me about areas in Kathmandu, Lalitpur or Bhaktapur, typical rents, room types, or how the fair-price score works."
+    },
+    {
+      "id": "areas_ktm",
+      "keywords": ["kathmandu areas","where in kathmandu","kathmandu locations","kathmandu neighborhoods","baneshwor","samakhusi","thamel","koteshwor","naxal","chabahil","maharajgunj","balaju","gongabu","kalanki","kirtipur","baluwatar"],
+      "answer": "In Kathmandu, RoomRadar lists rooms in Baneshwor, Koteshwor, Kalanki, Chabahil, Baluwatar, Maharajgunj, Kirtipur, Balaju, Gongabu, Samakhusi, Naxal and Thamel. Baneshwor, Naxal and Thamel tend to be pricier; Kirtipur and Kalanki are more affordable.",
+      "cta": { "label": "Browse Kathmandu listings", "href": "/listings?city=Kathmandu" }
+    },
+    {
+      "id": "areas_lalitpur",
+      "keywords": ["lalitpur areas","patan","where in lalitpur","lalitpur neighborhoods","jhamsikhel","sanepa","kupondole","pulchowk","satdobato","lagankhel","imadol","ekantakuna","bhaisepati"],
+      "answer": "In Lalitpur (Patan), we cover Kupondole, Jhamsikhel, Pulchowk, Satdobato, Lagankhel, Imadol, Ekantakuna, Sanepa and Bhaisepati. Jhamsikhel and Sanepa are premium; Satdobato and Imadol are gentler on the budget.",
+      "cta": { "label": "Browse Lalitpur listings", "href": "/listings?city=Lalitpur" }
+    },
+    {
+      "id": "areas_bhaktapur",
+      "keywords": ["bhaktapur areas","where in bhaktapur","bhaktapur neighborhoods","suryabinayak","kamalbinayak","sallaghari","dudhpati","katunje","sipadol","thimi","gatthaghar"],
+      "answer": "In Bhaktapur, RoomRadar lists Suryabinayak, Kamalbinayak, Sallaghari, Dudhpati, Katunje, Sipadol, Thimi and Gatthaghar. Bhaktapur is generally the most affordable of the three cities.",
+      "cta": { "label": "Browse Bhaktapur listings", "href": "/listings?city=Bhaktapur" }
+    },
+    {
+      "id": "price_1bhk",
+      "keywords": ["1bhk price","one bhk","1 bhk rent","1bhk cost","single bedroom","1bhk rent"],
+      "answer": "A 1BHK in the Valley typically runs Rs 10,000–20,000 / month, depending on area and amenities. Post it on RoomRadar and our fair-price model tells you if a listing is priced fairly.",
+      "cta": { "label": "See 1BHK listings", "href": "/listings?roomType=1BHK" }
+    },
+    {
+      "id": "price_2bhk",
+      "keywords": ["2bhk price","two bhk","2 bhk rent","2bhk cost","two bedroom","2bhk rent"],
+      "answer": "2BHK units usually range Rs 16,000–32,000 / month. Central Kathmandu and Jhamsikhel sit at the higher end; Bhaktapur and outer areas are lower.",
+      "cta": { "label": "See 2BHK listings", "href": "/listings?roomType=2BHK" }
+    },
+    {
+      "id": "price_single",
+      "keywords": ["single room","room price","cheapest","budget room","single room rent","affordable room"],
+      "answer": "A single room generally costs Rs 5,000–12,000 / month. Hostels (per seat) are Rs 6,000–13,000. Great for students — try Kirtipur, Kalanki, or Bhaktapur for value.",
+      "cta": { "label": "See single-room listings", "href": "/listings?roomType=Single+Room&maxRent=12000" }
+    },
+    {
+      "id": "price_flat",
+      "keywords": ["flat price","whole flat","apartment rent","flat cost","full flat","apartment price"],
+      "answer": "A full flat typically ranges Rs 22,000–55,000 / month depending on size, floor and location. Sanepa, Jhamsikhel, Baluwatar and Maharajgunj lean expensive.",
+      "cta": { "label": "See flat listings", "href": "/listings?roomType=Flat" }
+    },
+    {
+      "id": "price_hostel",
+      "keywords": ["hostel","hostel price","dorm","per seat","shared room","student hostel"],
+      "answer": "Hostel seats usually go for Rs 6,000–13,000 / month, meals sometimes included. Popular near Kirtipur (Tribhuvan University) and Pulchowk (engineering campus).",
+      "cta": { "label": "See hostel listings", "href": "/listings?roomType=Hostel" }
+    },
+    {
+      "id": "roomtypes",
+      "keywords": ["room types","what types","kinds of rooms","options","bhk meaning","what is bhk"],
+      "answer": "RoomRadar covers five types: Single Room, 1BHK, 2BHK, Flat, and Hostel. (BHK = Bedroom-Hall-Kitchen — so a 1BHK has one bedroom plus a hall and kitchen.)",
+      "cta": { "label": "Explore all room types", "href": "/listings" }
+    },
+    {
+      "id": "fairprice",
+      "keywords": ["fair price","fair rent","how price","prediction","ml","model","overpriced","is it fair","fair-price badge","how does the price","how is rent decided","price accurate"],
+      "answer": "Every listing is scored by our fair-rent model, which learned from Valley listings. It compares the asking rent to a predicted fair rent and shows a badge: Below market, Fair price, Slightly high, or Above fair — so you instantly know if a room is a good deal.",
+      "cta": { "label": "See how the model performs", "href": "/results" }
+    },
+    {
+      "id": "how_to_post",
+      "keywords": ["post a room","add listing","list my room","how to post","become owner","rent out","list a flat","upload listing"],
+      "answer": "To post a room: register as an Owner, then go to “Post a room”. As you fill in the details, the model shows a live suggested rent so you can price it fairly. You can add photos too.",
+      "cta": { "label": "Post a room", "href": "/listings/new" }
+    },
+    {
+      "id": "how_to_search",
+      "keywords": ["find a room","search","filter","how to find","looking for room","browse","explore rooms"],
+      "answer": "Use the search bar or the Explore page. You can filter by city, area, room type, price range and amenities. Results show on a list and an interactive map, each with a fair-price badge.",
+      "cta": { "label": "Explore rooms", "href": "/listings" }
+    },
+    {
+      "id": "amenities",
+      "keywords": ["amenities","facilities","parking","wifi","wi-fi","water","furnished","balcony","kitchen","attached bathroom"],
+      "answer": "Listings can include Water Supply, Parking, Attached Bathroom, Wi-Fi Ready, Kitchen and Balcony. You can filter for the ones you need — parking and attached bathroom usually add the most to rent.",
+      "cta": { "label": "Filter by amenities", "href": "/listings" }
+    },
+    {
+      "id": "students",
+      "keywords": ["student","students","college","university","tribhuvan","pulchowk campus","engineering","medical","kirtipur students"],
+      "answer": "For students, Kirtipur (near Tribhuvan University) and Pulchowk (near IOE) are the best-value picks. Hostels run Rs 6,000–13,000 / month; single rooms Rs 5,000–12,000. Filter by “Hostel” or “Single Room” on Explore.",
+      "cta": { "label": "See student-friendly hostels", "href": "/listings?roomType=Hostel" }
+    },
+    {
+      "id": "deposit",
+      "keywords": ["deposit","security deposit","advance","how much deposit","upfront"],
+      "answer": "Owners in the Valley typically ask 1–2 months' rent as a refundable deposit, plus the first month upfront. Confirm on the listing page and always get a written receipt."
+    },
+    {
+      "id": "utilities",
+      "keywords": ["electricity","utility","utilities","water bill","internet bill","bijuli","included"],
+      "answer": "Utilities (electricity, water, internet) are usually billed separately unless the listing says “inclusive”. Check the amenities list — Wi-Fi Ready means the wiring is there, not always that internet cost is included."
+    },
+    {
+      "id": "viewing",
+      "keywords": ["visit","viewing","see the room","tour","when can i visit","inspection"],
+      "answer": "Contact the owner via the listing page to schedule a viewing. It's a good idea to visit in person before paying any deposit — always meet the owner and see the exact room."
+    },
+    {
+      "id": "verification",
+      "keywords": ["verified","trust","scam","fake listing","safe","real owner","owner verified"],
+      "answer": "Every owner registers before posting, so listings carry a “Verified owner” tag. If something looks off (price way below market, no photos, pressure to pay before viewing), flag it — the admin team reviews reports."
+    },
+    {
+      "id": "account",
+      "keywords": ["sign up","register","login","account","create account","how to join","register account"],
+      "answer": "Click “Get started” to register as a Seeker (to browse) or an Owner (to post rooms). It's free.",
+      "cta": { "label": "Get started", "href": "/register" }
+    },
+    {
+      "id": "coverage",
+      "keywords": ["which cities","coverage","where do you work","areas covered","outside valley","pokhara","chitwan","butwal","biratnagar"],
+      "answer": "Right now RoomRadar focuses on the Kathmandu Valley — Kathmandu, Lalitpur and Bhaktapur. More cities are on our future roadmap."
+    },
+    {
+      "id": "contact",
+      "keywords": ["contact","support","help","phone","email","complaint","reach out"],
+      "answer": "For support, use the Contact link in the footer. For listing questions, the fair-price badge and this assistant cover most of what you'll need."
+    },
+    {
+      "id": "about",
+      "keywords": ["who made this","who built","team","bishow","anjan","authors","about roomradar"],
+      "answer": "RoomRadar is a final-year B.Sc. CSIT project by Bishow Lamichhane and Anjan Sharma — a fair-rent finder for the Kathmandu Valley powered by a regression model trained on real Valley listings."
+    },
+    {
+      "id": "thanks",
+      "keywords": ["thanks","thank you","dhanyabad","great","cool","awesome","ok cool"],
+      "answer": "Happy to help! Ask me anything else about rooms, areas or pricing."
+    }
+  ],
+  "fallback": "I'm not sure about that one — I can help with areas (Kathmandu, Lalitpur, Bhaktapur), typical rents, room types, amenities, how to post or search, and how the fair-price score works. Try one of the suggestions below.",
+  "quickReplies": [
+    "1BHK price in Lalitpur?",
+    "Areas in Bhaktapur",
+    "How does fair-price work?",
+    "How do I post a room?"
+  ]
+}

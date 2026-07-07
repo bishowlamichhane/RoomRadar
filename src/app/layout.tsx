@@ -3,6 +3,9 @@ import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import RadarAssistant from "@/components/assistant/RadarAssistant";
+import SiteChrome from "@/components/SiteChrome";
+import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { auth } from "@/lib/auth";
 import { SessionProvider } from "next-auth/react";
 
@@ -34,9 +37,18 @@ export default async function RootLayout({
         className={`${inter.variable} ${fraunces.variable} min-h-screen flex flex-col`}
       >
         <SessionProvider session={session}>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <ConfirmProvider>
+            <SiteChrome>
+              <Navbar />
+            </SiteChrome>
+            <main className="flex-1">{children}</main>
+            <SiteChrome>
+              <Footer />
+            </SiteChrome>
+            <SiteChrome>
+              <RadarAssistant />
+            </SiteChrome>
+          </ConfirmProvider>
         </SessionProvider>
       </body>
     </html>

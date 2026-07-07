@@ -8,7 +8,12 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { AMENITIES } from "@/lib/constants";
 import DeleteButton from "./DeleteButton";
-import { parseMedia, firstImage, firstVideo } from "@/lib/media";
+import {
+  parseMedia,
+  firstVideo,
+  type MediaItem,
+} from "@/lib/media";
+import ListingGallery from "@/components/ListingGallery";
 
 export default async function ListingDetail({
   params,
@@ -27,10 +32,10 @@ export default async function ListingDetail({
 
   const pos = Math.min(100, Math.max(0, 50 + diff * 100));
   const media = parseMedia(listing.mediaUrls);
-  const cover = firstImage(media) ?? listing.photoUrl;
-  const otherImages = media
-    .filter((m) => m.type === "image" && m.url !== cover)
-    .slice(0, 4);
+  const galleryItems: MediaItem[] = media.filter((m) => m.type === "image");
+  if (galleryItems.length === 0 && listing.photoUrl) {
+    galleryItems.push({ url: listing.photoUrl, type: "image" });
+  }
   const videoUrl = firstVideo(media);
 
   return (
@@ -45,30 +50,7 @@ export default async function ListingDetail({
       <div className="mt-4 grid gap-8 lg:grid-cols-3">
         {/* Left: main */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-3xl overflow-hidden aspect-[16/9] bg-[color:var(--color-primary-tint)]">
-            {cover && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={cover}
-                alt={listing.title}
-                className="w-full h-full object-cover"
-              />
-            )}
-          </div>
-
-          {otherImages.length > 0 && (
-            <div className="grid grid-cols-4 gap-3">
-              {otherImages.map((m) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={m.url}
-                  src={m.url}
-                  alt=""
-                  className="aspect-square w-full object-cover rounded-2xl border border-black/5"
-                />
-              ))}
-            </div>
-          )}
+          <ListingGallery items={galleryItems} title={listing.title} />
 
           {videoUrl && (
             <div className="rounded-2xl overflow-hidden border border-black/5 bg-black">
@@ -283,3 +265,4 @@ function Fact({ label, value }: { label: string; value: string | number }) {
     </div>
   );
 }
+

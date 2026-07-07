@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { npr } from "@/lib/format";
 import Spinner from "@/components/ui/Spinner";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Listing = {
   id: string;
@@ -32,11 +33,21 @@ export default function AdminTables({
   users: UserRow[];
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [tab, setTab] = useState<"listings" | "users">("listings");
   const [busy, setBusy] = useState<string | null>(null);
 
   async function deleteListing(id: string) {
-    if (!confirm("Delete listing?")) return;
+    const target = listings.find((l) => l.id === id);
+    const ok = await confirm({
+      title: "Delete this listing?",
+      description: target
+        ? `“${target.title}” in ${target.area}, ${target.city} will be permanently removed from RoomRadar.`
+        : "This listing will be permanently removed from RoomRadar.",
+      confirmLabel: "Delete listing",
+      tone: "danger",
+    });
+    if (!ok) return;
     setBusy(id);
     await fetch(`/api/admin/listings/${id}`, { method: "DELETE" });
     setBusy(null);
@@ -44,7 +55,16 @@ export default function AdminTables({
   }
 
   async function deleteUser(id: string) {
-    if (!confirm("Delete user (and their listings)?")) return;
+    const target = users.find((u) => u.id === id);
+    const ok = await confirm({
+      title: "Delete this user?",
+      description: target
+        ? `${target.name} (${target.email}) and their ${target._count.listings} listing${target._count.listings === 1 ? "" : "s"} will be permanently deleted. This can't be undone.`
+        : "This user and all of their listings will be permanently deleted.",
+      confirmLabel: "Delete user",
+      tone: "danger",
+    });
+    if (!ok) return;
     setBusy(id);
     await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
     setBusy(null);

@@ -58,21 +58,6 @@ option {
   color: var(--color-muted);
 }
 
-.hero-gradient {
-  background:
-    radial-gradient(
-      ellipse 60% 55% at 20% 40%,
-      #ffd7a3 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse 80% 60% at 90% 20%,
-      #ea8b47 0%,
-      transparent 55%
-    ),
-    linear-gradient(180deg, #f3a166 0%, #b95a2a 100%);
-}
-
 .card {
   background: white;
   border-radius: 16px;
@@ -194,4 +179,35 @@ option {
   .radar-pip-ring {
     animation: none !important;
   }
+}
+
+/* --- Radar Assistant chat widget --- */
+@keyframes asst-pop {
+  0%   { transform: scale(.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes asst-slide {
+  0%   { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes asst-bounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40%           { transform: translateY(-4px); }
+}
+.asst-panel { animation: asst-pop .18s ease-out both; transform-origin: bottom right; }
+.asst-msg   { animation: asst-slide .22s ease-out both; }
+.asst-dot   { animation: asst-bounce 1.2s infinite; display: inline-block; }
+.asst-dot:nth-child(2) { animation-delay: .15s; }
+.asst-dot:nth-child(3) { animation-delay: .3s; }
+@media (prefers-reduced-motion: reduce) {
+  .asst-panel, .asst-msg, .asst-dot { animation: none !important; }
+}
+
+/* --- Global confirm dialog --- */
+@keyframes cnf-fade   { 0% { opacity: 0 } 100% { opacity: 1 } }
+@keyframes cnf-pop    { 0% { transform: scale(.94) translateY(6px); opacity: 0 } 100% { transform: scale(1) translateY(0); opacity: 1 } }
+.cnf-backdrop { animation: cnf-fade .14s ease-out both; }
+.cnf-panel    { animation: cnf-pop .18s cubic-bezier(.2, .8, .3, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .cnf-backdrop, .cnf-panel { animation: none !important; }
 }

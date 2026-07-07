@@ -35,7 +35,7 @@ export default function HeroSearch() {
   return (
     <form
       onSubmit={submit}
-      className="mx-auto max-w-3xl bg-white/95 backdrop-blur-md border border-white/70 shadow-[0_24px_60px_rgba(60,30,30,0.28)] rounded-[20px] p-2 flex items-stretch gap-1"
+      className="mx-auto max-w-3xl bg-white/95 backdrop-blur-md border border-white/70 shadow-[0_24px_60px_rgba(60,30,30,0.28)] rounded-2xl md:rounded-[20px] p-2 grid grid-cols-1 sm:grid-cols-3 md:flex md:items-stretch gap-2 md:gap-1"
     >
       <PillSelect
         label="City"
@@ -71,7 +71,7 @@ export default function HeroSearch() {
         type="submit"
         variant="primary"
         loading={isPending}
-        className="!rounded-2xl px-6 whitespace-nowrap"
+        className="!rounded-2xl px-6 whitespace-nowrap col-span-1 sm:col-span-3 md:col-span-1 justify-center"
       >
         <span className="text-base">◎</span>
         Search
@@ -103,7 +103,7 @@ function PillSelect({
   return (
     <label
       className={`relative flex-1 min-w-0 flex flex-col justify-center px-4 py-2 cursor-pointer text-left ${
-        divider ? "border-r border-black/10" : ""
+        divider ? "md:border-r md:border-black/10" : ""
       } ${disabled ? "opacity-50 pointer-events-none" : ""}`}
     >
       <span className="mono text-[10px] tracking-[.14em] font-semibold text-[color:var(--color-muted)]">

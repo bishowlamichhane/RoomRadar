@@ -1,7 +1,12 @@
 "use client";
 
 import { CldUploadWidget } from "next-cloudinary";
-import type { MediaItem } from "@/lib/media";
+import {
+  MEDIA_CATEGORIES,
+  MEDIA_CATEGORY_LABEL,
+  type MediaCategory,
+  type MediaItem,
+} from "@/lib/media";
 import Spinner from "@/components/ui/Spinner";
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -18,6 +23,10 @@ export default function MediaUploader({
 
   function remove(idx: number) {
     onChange(value.filter((_, i) => i !== idx));
+  }
+
+  function setCategory(idx: number, cat: MediaCategory | undefined) {
+    onChange(value.map((m, i) => (i === idx ? { ...m, category: cat } : m)));
   }
 
   function handleUpload(result: unknown) {
@@ -55,7 +64,7 @@ export default function MediaUploader({
     <div className="space-y-4">
       {/* Thumbnail grid */}
       {value.length > 0 && (
-        <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {value.map((m, i) => (
             <div
               key={m.url + i}
@@ -88,12 +97,39 @@ export default function MediaUploader({
               >
                 ✕
               </button>
-              <span className="absolute bottom-1.5 left-1.5 text-[9px] uppercase tracking-wider font-semibold bg-black/60 text-white rounded-full px-2 py-0.5">
-                {m.type}
-              </span>
               {i === 0 && m.type === "image" && (
                 <span className="absolute top-1.5 left-1.5 text-[9px] uppercase tracking-wider font-semibold bg-white text-[color:var(--color-primary-600)] rounded-full px-2 py-0.5">
                   Cover
+                </span>
+              )}
+              {m.type === "image" ? (
+                <label className="absolute inset-x-1.5 bottom-1.5 flex items-center gap-1 rounded-full bg-black/70 text-white text-[10px] px-2 py-1 cursor-pointer">
+                  <span aria-hidden>◈</span>
+                  <span className="opacity-70">Room:</span>
+                  <select
+                    value={m.category ?? ""}
+                    onChange={(e) =>
+                      setCategory(
+                        i,
+                        e.target.value === ""
+                          ? undefined
+                          : (e.target.value as MediaCategory),
+                      )
+                    }
+                    className="bg-transparent text-white text-[10px] font-semibold uppercase tracking-wider focus:outline-none appearance-none flex-1 min-w-0"
+                    aria-label="Photo category"
+                  >
+                    <option value="">Unlabeled</option>
+                    {MEDIA_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {MEDIA_CATEGORY_LABEL[c]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <span className="absolute bottom-1.5 left-1.5 text-[9px] uppercase tracking-wider font-semibold bg-black/60 text-white rounded-full px-2 py-0.5">
+                  video
                 </span>
               )}
             </div>
@@ -108,7 +144,7 @@ export default function MediaUploader({
           multiple: true,
           resourceType: "image",
           sources: ["local", "url", "camera"],
-          maxFiles: 8,
+          maxFiles: 12,
           folder: "roomradar/listings",
           clientAllowedFormats: ["jpg", "jpeg", "png", "webp"],
         }}
@@ -145,9 +181,9 @@ export default function MediaUploader({
               Drop photos here or click to upload
             </div>
             <div className="text-xs text-[color:var(--color-muted)]">
-              JPG, PNG or WebP · up to 8 photos ·{" "}
+              JPG, PNG or WebP · up to 12 photos ·{" "}
               {photoCount > 0
-                ? `${photoCount} added`
+                ? `${photoCount} added — label each as bedroom, kitchen, bathroom, etc.`
                 : "first one becomes the cover"}
             </div>
           </button>

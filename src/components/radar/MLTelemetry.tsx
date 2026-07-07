@@ -155,11 +155,11 @@ function FeedLine({ row, rank }: { row: FeedRow; rank: number }) {
   const diffSign = p.diff >= 0 ? "+" : "";
   return (
     <div
-      className="font-mono text-[11.5px] leading-tight text-white/85 tabular-nums flex items-center gap-2 transition-opacity duration-500"
+      className="font-mono text-[11.5px] leading-tight text-white/85 tabular-nums flex flex-wrap items-center gap-x-2 gap-y-1 transition-opacity duration-500"
       style={{ opacity }}
     >
       <span className="text-emerald-300/70">▸</span>
-      <span className="w-[150px] truncate text-white/70">
+      <span className="w-[130px] sm:w-[150px] truncate text-white/70">
         {p.area}, {p.city} · {p.roomType}
       </span>
       {row.phase === "computing" ? (
@@ -258,7 +258,7 @@ function ContribBars({
   const max = Math.max(1, ...contributions.map((c) => Math.abs(c.value)));
   return (
     <div>
-      <div className="text-[10px] mono text-white/45 tracking-widest mb-2 flex items-center justify-between">
+      <div className="text-[10px] mono text-white/45 tracking-widest mb-2 flex items-center justify-between gap-2">
         <span>WHY THIS PRICE — TOP CONTRIBUTIONS</span>
         {current && (
           <span className="text-white/40 truncate max-w-[55%]">
@@ -281,7 +281,7 @@ function ContribBars({
               key={c.feature}
               className="flex items-center gap-2 font-mono text-[11px] tabular-nums text-white/85"
             >
-              <div className="w-[100px] truncate text-white/60">{c.label}</div>
+              <div className="w-[90px] sm:w-[100px] truncate text-white/60">{c.label}</div>
               <div className="flex-1 flex items-center h-3 relative">
                 <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/15" />
                 {pos ? (
@@ -305,7 +305,7 @@ function ContribBars({
                 )}
               </div>
               <div
-                className="w-[70px] text-right"
+                className="w-[62px] sm:w-[70px] text-right"
                 style={{ color: pos ? "#7dd6c8" : "#f2b788" }}
               >
                 {pos ? "+" : "−"}Rs {Math.round(Math.abs(c.value)).toLocaleString("en-IN")}
@@ -400,7 +400,7 @@ function Throughput({
         {scanned}
       </div>
       <div className="text-[10px] mono text-white/40 mt-1">
-        LIVE SCAN RATE · ~{reducedMotion ? "0" : "0.6"}/s
+        LIVE SCAN RATE · ~{reducedMotion ? "0" : "0.3"}/s
       </div>
     </div>
   );

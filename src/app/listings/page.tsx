@@ -39,7 +39,7 @@ export default async function ListingsPage({
   }));
 
   return (
-    <div className="max-w-7xl mx-auto px-5 py-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-5 py-6 sm:py-8">
       <div className="mb-6">
         <div className="mono">Explore</div>
         <h1 className="font-display text-3xl md:text-4xl font-semibold">

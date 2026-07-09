@@ -33,6 +33,12 @@ export default function ListingCard({ listing }: { listing: Listing }) {
         <span className="absolute top-3 left-3 bg-white/95 text-[11px] font-medium rounded-full px-2.5 py-1 text-[color:var(--color-ink)]">
           ✓ Verified owner
         </span>
+        {listing.biddable && (
+          <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 bg-[color:var(--color-primary)] text-white text-[10px] font-mono uppercase tracking-widest rounded-full px-2.5 py-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-white radar-pulse-dot" />
+            Accepting bids
+          </span>
+        )}
         {hasVideo && (
           <span className="absolute top-3 right-3 bg-black/70 text-white text-[10px] font-semibold rounded-full px-2 py-1 flex items-center gap-1">
             ▶ Video

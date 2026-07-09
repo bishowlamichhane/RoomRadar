@@ -222,50 +222,69 @@ async function main() {
   const secondOwnerHash = await bcrypt.hash("owner123", 10);
 
   await prisma.user.upsert({
-    where: { email: "admin@roomradar.np" },
+    where: { email: "admin@gmail.com" },
     update: {},
     create: {
       name: "RoomRadar Admin",
-      email: "admin@roomradar.np",
+      email: "admin@gmail.com",
       passwordHash: adminHash,
       role: "ADMIN",
     },
   });
 
   const owner = await prisma.user.upsert({
-    where: { email: "owner@roomradar.np" },
+    where: { email: "owner@gmail.com" },
     update: {},
     create: {
       name: "Bishow Lamichhane",
-      email: "owner@roomradar.np",
+      email: "owner@gmail.com",
       passwordHash: ownerHash,
       role: "OWNER",
     },
   });
 
   const owner2 = await prisma.user.upsert({
-    where: { email: "owner2@roomradar.np" },
+    where: { email: "owner2@gmail.com" },
     update: {},
     create: {
       name: "Anjan Sharma",
-      email: "owner2@roomradar.np",
+      email: "owner2@gmail.com",
       passwordHash: secondOwnerHash,
       role: "OWNER",
     },
   });
 
-  await prisma.user.upsert({
-    where: { email: "seeker@roomradar.np" },
+  const seeker = await prisma.user.upsert({
+    where: { email: "seeker@gmail.com" },
     update: {},
     create: {
       name: "Test Seeker",
-      email: "seeker@roomradar.np",
+      email: "seeker@gmail.com",
       passwordHash: seekerHash,
       role: "SEEKER",
     },
   });
 
+  const seeker2 = await prisma.user.upsert({
+    where: { email: "seeker2@gmail.com" },
+    update: {},
+    create: {
+      name: "Rina Karki",
+      email: "seeker2@gmail.com",
+      passwordHash: seekerHash,
+      role: "SEEKER",
+    },
+  });
+
+  // Wipe existing bids first (FK cascade would drop them with listings, but
+  // being explicit lets us re-run the seed cleanly).
+  await prisma.bid.deleteMany({});
   await prisma.listing.deleteMany({});
+  // Sweep away legacy @roomradar.np demo accounts from earlier seed runs so
+  // the login page shows only the canonical @gmail.com credentials.
+  await prisma.user.deleteMany({
+    where: { email: { endsWith: "@roomradar.np" } },
+  });
 
   const areas = Object.keys(AREA_COORDS);
   const kathAreas = areas.filter((a) => AREA_COORDS[a].city === "Kathmandu");
@@ -378,6 +397,22 @@ async function main() {
       // updatedAt is nudged into the last ~45 days so the admin dashboard
       // can show a plausible "last 30 days" revenue slice.
       const rented = rand() < 0.3;
+      // Around 40% of still-available listings accept bids. Owners pick a
+      // starting price at 90% of the listed rent so there's headroom for
+      // bids to climb up towards or past the listed rent.
+      const biddable = !rented && rand() < 0.4;
+      const bidStartPrice = biddable
+        ? Math.round((rent * 0.9) / 500) * 500
+        : null;
+      const bidMinIncrement = biddable
+        ? rent >= 30000
+          ? 1000
+          : 500
+        : 500;
+      const bidsCloseAt =
+        biddable && rand() < 0.5
+          ? new Date(Date.now() + (2 + Math.floor(rand() * 6)) * 86400 * 1000)
+          : null;
       const cover = mediaSet[0].url;
       const listingRow = await prisma.listing.create({
         data: {
@@ -399,6 +434,10 @@ async function main() {
           photoUrl: cover,
           mediaUrls: JSON.stringify(mediaSet),
           available: !rented,
+          biddable,
+          bidStartPrice,
+          bidMinIncrement,
+          bidsCloseAt,
           ownerId: rand() < 0.7 ? owner.id : owner2.id,
         },
       });
@@ -415,7 +454,66 @@ async function main() {
   }
 
   console.log(`Seeded ${created} listings.`);
-  console.log("Users: admin@roomradar.np / owner@roomradar.np / seeker@roomradar.np");
+
+  // Seed a small number of realistic bids across biddable listings so the
+  // owner inbox and "My bids" page aren't empty at defence time. Each demo
+  // listing gets 1-3 bids; the highest is WINNING, the rest OUTBID.
+  const biddableListings = await prisma.listing.findMany({
+    where: { biddable: true },
+    select: {
+      id: true,
+      rent: true,
+      bidStartPrice: true,
+      bidMinIncrement: true,
+    },
+    take: 24,
+  });
+  const bidders = [seeker.id, seeker2.id];
+  const messages = [
+    "Working professional, can move in this month.",
+    "Long-term tenant, willing to sign 12-month lease.",
+    "Couple with steady salary, references available.",
+    "MBA student — quiet, no smoking, no pets.",
+    "Family of 3 relocating from Pokhara, flexible on move-in date.",
+    "",
+  ];
+  let bidCount = 0;
+  for (const l of biddableListings) {
+    const nBids = 1 + Math.floor(rand() * 3);
+    let cursor = l.bidStartPrice ?? l.rent;
+    const step = l.bidMinIncrement;
+    // Build ascending bids from alternating bidders.
+    const raises: { bidderId: string; amount: number; message: string }[] = [];
+    for (let i = 0; i < nBids; i++) {
+      cursor = cursor + step + Math.floor(rand() * step);
+      raises.push({
+        bidderId: bidders[i % bidders.length],
+        amount: cursor,
+        message: messages[Math.floor(rand() * messages.length)],
+      });
+    }
+    // Insert oldest first, mark all OUTBID except the last (WINNING).
+    const now = Date.now();
+    for (let i = 0; i < raises.length; i++) {
+      const r = raises[i];
+      const winning = i === raises.length - 1;
+      await prisma.bid.create({
+        data: {
+          listingId: l.id,
+          bidderId: r.bidderId,
+          amount: r.amount,
+          message: r.message || null,
+          status: winning ? "WINNING" : "OUTBID",
+          createdAt: new Date(now - (raises.length - i) * 3600 * 1000),
+        },
+      });
+      bidCount++;
+    }
+  }
+  console.log(`Seeded ${bidCount} bids across ${biddableListings.length} biddable listings.`);
+  console.log(
+    "Users: admin@gmail.com / owner@gmail.com / owner2@gmail.com / seeker@gmail.com / seeker2@gmail.com",
+  );
   // Silence unused-var lint
   void AMENITY_KEYS;
 }

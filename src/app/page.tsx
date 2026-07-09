@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { listListings } from "@/controllers/listingController";
+import { listBiddableSpotlight } from "@/controllers/bidController";
 import ListingCard from "@/components/ListingCard";
 import HeroSearch from "@/components/HeroSearch";
 import RadarControlRoom from "@/components/radar/RadarControlRoom";
@@ -12,8 +13,12 @@ export default async function HomePage() {
   if (session?.user?.role === "OWNER") redirect("/dashboard");
   if (session?.user?.role === "ADMIN") redirect("/admin");
 
-  const listings = await listListings({});
+  const [listings, biddable] = await Promise.all([
+    listListings({}),
+    listBiddableSpotlight(6),
+  ]);
   const featured = listings.slice(0, 6);
+  const loggedIn = !!session?.user;
 
   return (
     <div className="bg-[color:var(--color-canvas)]">
@@ -109,6 +114,44 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Live bidding spotlight */}
+      {biddable.length > 0 && (
+        <section className="max-w-7xl mx-auto px-3 sm:px-5 mt-14 sm:mt-20">
+          <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
+            <div>
+              <div className="mono flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 radar-pulse-dot" />
+                Live bidding
+              </div>
+              <h2 className="font-display text-3xl md:text-4xl font-semibold text-[color:var(--color-ink)]">
+                Rooms accepting offers right now
+              </h2>
+              <p className="text-sm text-[color:var(--color-muted)] mt-1 max-w-xl">
+                Owners set a starting price; seekers bid up. Watch the counter,
+                place your offer — the owner picks the tenant that works for
+                them.
+              </p>
+            </div>
+            <Link
+              href="/listings"
+              className="hidden md:inline text-sm text-[color:var(--color-primary)] font-medium"
+            >
+              Browse all listings →
+            </Link>
+          </div>
+
+          <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {biddable.map((l) => (
+              <BidSpotlightCard
+                key={l.id}
+                listing={l}
+                loggedIn={loggedIn}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Fair-price section */}
       <section className="max-w-7xl mx-auto px-3 sm:px-5 mt-14 sm:mt-20">
         <div className="grid gap-10 md:grid-cols-2 items-center">
@@ -197,6 +240,107 @@ function Stat({ value, label }: { value: string; label: string }) {
     <div>
       <div className="font-display text-3xl font-semibold">{value}</div>
       <div className="text-xs text-white/70 mt-1">{label}</div>
+    </div>
+  );
+}
+
+type SpotlightListing = Awaited<
+  ReturnType<typeof listBiddableSpotlight>
+>[number];
+
+function BidSpotlightCard({
+  listing,
+  loggedIn,
+}: {
+  listing: SpotlightListing;
+  loggedIn: boolean;
+}) {
+  const cover = listing.photoUrl;
+  const detailHref = `/listings/${listing.id}#bid-panel`;
+  const placeBidHref = loggedIn
+    ? detailHref
+    : `/login?callbackUrl=${encodeURIComponent(detailHref)}`;
+  const anchor = listing.currentHighest ?? null;
+  const anchorLabel = anchor !== null ? "Current highest" : "Starting from";
+  const anchorValue = anchor !== null ? npr(anchor) : npr(listing.minNext);
+
+  return (
+    <div className="card overflow-hidden flex flex-col">
+      <Link
+        href={detailHref}
+        className="relative aspect-[16/9] bg-[color:var(--color-primary-tint)] block"
+      >
+        {cover && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={cover}
+            alt={listing.title}
+            className="w-full h-full object-cover"
+          />
+        )}
+        <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 bg-[color:var(--color-primary)] text-white text-[10px] font-mono uppercase tracking-widest rounded-full px-2.5 py-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-white radar-pulse-dot" />
+          {listing.totalActiveBids > 0
+            ? `${listing.totalActiveBids} bid${listing.totalActiveBids === 1 ? "" : "s"}`
+            : "New auction"}
+        </span>
+      </Link>
+      <div className="p-4 flex flex-col gap-3 flex-1">
+        <div>
+          <div className="text-[12px] text-[color:var(--color-muted)] flex items-center gap-1">
+            <span>◎</span>
+            <span>
+              {listing.area}, {listing.city}
+            </span>
+          </div>
+          <Link
+            href={detailHref}
+            className="font-display text-[17px] leading-tight font-semibold text-[color:var(--color-ink)] hover:underline line-clamp-2 min-h-[42px] mt-0.5"
+          >
+            {listing.title}
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <MiniBidStat label={anchorLabel} value={anchorValue} />
+          <MiniBidStat
+            label="Min next bid"
+            value={npr(listing.minNext)}
+            tone="primary"
+          />
+        </div>
+        <Link
+          href={placeBidHref}
+          className="mt-1 inline-flex items-center justify-center gap-2 w-full bg-[color:var(--color-primary)] hover:bg-[color:var(--color-primary-600)] text-white rounded-xl px-4 py-2.5 text-sm font-semibold"
+        >
+          {loggedIn ? "Place a bid" : "Log in to bid"}
+          <span aria-hidden>→</span>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function MiniBidStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "primary";
+}) {
+  const toneClass =
+    tone === "primary"
+      ? "bg-[color:var(--color-primary-tint)] border-[color:var(--color-primary)]/25 text-[color:var(--color-primary-600)]"
+      : "bg-[color:var(--color-canvas)] border-black/5 text-[color:var(--color-ink)]";
+  return (
+    <div className={`rounded-xl border px-3 py-2 ${toneClass}`}>
+      <div className="text-[10px] uppercase tracking-widest font-semibold opacity-70">
+        {label}
+      </div>
+      <div className="text-sm font-semibold mt-0.5 font-mono tabular-nums truncate">
+        {value}
+      </div>
     </div>
   );
 }

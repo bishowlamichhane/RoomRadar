@@ -54,6 +54,12 @@ export default async function EditListingPage({
           balcony: listing.balcony,
           latitude: listing.latitude,
           longitude: listing.longitude,
+          biddable: listing.biddable,
+          bidStartPrice: listing.bidStartPrice,
+          bidMinIncrement: listing.bidMinIncrement,
+          bidsCloseAt: listing.bidsCloseAt
+            ? new Date(listing.bidsCloseAt).toISOString().slice(0, 16)
+            : "",
         }}
       />
     </div>

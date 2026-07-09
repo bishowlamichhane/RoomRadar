@@ -1,4 +1,5 @@
 import { getListing } from "@/controllers/listingController";
+import { getBidSummary } from "@/controllers/bidController";
 import { notFound } from "next/navigation";
 import { npr } from "@/lib/format";
 import { fairness, VERDICT_META } from "@/lib/fairPrice";
@@ -6,14 +7,17 @@ import FairPriceBadge from "@/components/FairPriceBadge";
 import MapLoader from "@/components/MapLoader";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { AMENITIES } from "@/lib/constants";
+import { AMENITIES, APPROX_RADIUS_M } from "@/lib/constants";
 import DeleteButton from "./DeleteButton";
+import BidPanel from "@/components/BidPanel";
 import {
   parseMedia,
   firstVideo,
   type MediaItem,
 } from "@/lib/media";
 import ListingGallery from "@/components/ListingGallery";
+import { serializeListing } from "@/lib/location";
+import TourRequestPanel from "@/components/TourRequestPanel";
 
 export default async function ListingDetail({
   params,
@@ -21,12 +25,19 @@ export default async function ListingDetail({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const listing = await getListing(id);
-  if (!listing) notFound();
+  const rawListing = await getListing(id);
+  if (!rawListing) notFound();
   const session = await auth();
-  const isOwner = session?.user?.id === listing.ownerId;
+  const isOwner = session?.user?.id === rawListing.ownerId;
   const isAdmin = session?.user?.role === "ADMIN";
+  const viewer = session?.user
+    ? { id: session.user.id, role: session.user.role ?? "SEEKER" }
+    : null;
+  const listing = await serializeListing(rawListing, viewer);
   const predicted = listing.predictedRent ?? listing.rent;
+  const bidSummary = listing.biddable
+    ? await getBidSummary(listing.id, session?.user?.id ?? null)
+    : null;
   const { diff, verdict } = fairness(listing.rent, predicted);
   const meta = VERDICT_META[verdict];
 
@@ -71,6 +82,15 @@ export default async function ListingDetail({
               <h1 className="font-display text-3xl md:text-4xl font-semibold">
                 {listing.title}
               </h1>
+              {bidSummary && (
+                <a
+                  href="#bid-panel"
+                  className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5 bg-[color:var(--color-primary-tint)] border border-[color:var(--color-primary)]/25 hover:border-[color:var(--color-primary)]/45 text-[color:var(--color-primary-600)] text-xs font-semibold transition-colors"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary)] radar-pulse-dot" />
+                  Accepting bids · Place a bid ↓
+                </a>
+              )}
             </div>
             <FairPriceBadge
               listed={listing.rent}
@@ -140,7 +160,7 @@ export default async function ListingDetail({
             <h2 className="font-display text-xl font-semibold mb-3">
               Where it is
             </h2>
-            <div className="h-72 rounded-2xl overflow-hidden">
+            <div className="h-72 rounded-2xl overflow-hidden relative">
               <MapLoader
                 listings={[
                   {
@@ -154,15 +174,71 @@ export default async function ListingDetail({
                   },
                 ]}
                 center={{ lat: listing.latitude, lng: listing.longitude }}
-                zoom={14}
+                zoom={listing.locationUnlocked ? 15 : 13}
+                approxCircle={
+                  listing.locationUnlocked
+                    ? undefined
+                    : {
+                        lat: listing.latitude,
+                        lng: listing.longitude,
+                        radiusM: APPROX_RADIUS_M,
+                      }
+                }
               />
+              {!listing.locationUnlocked && (
+                <div className="pointer-events-none absolute inset-x-3 bottom-3 rounded-xl bg-white/95 backdrop-blur border border-black/10 px-4 py-3 text-xs text-[color:var(--color-ink)] shadow-sm">
+                  <div className="font-semibold text-[color:var(--color-primary-600)]">
+                    Approximate area shown
+                  </div>
+                  <div className="text-[color:var(--color-muted)] mt-0.5">
+                    Exact location unlocks after your tour booking is
+                    confirmed and paid.
+                  </div>
+                </div>
+              )}
             </div>
           </section>
+
+          {session?.user && !isOwner && !isAdmin && (
+            <TourRequestPanel
+              listingId={listing.id}
+              title={listing.title}
+            />
+          )}
         </div>
 
         {/* Right: pricing panel */}
         <aside className="space-y-5">
-          <div className="card p-6 sticky top-24">
+          <div
+            className={`card p-6 ${
+              // Sticky is nice on non-biddable listings (keeps the price
+              // panel visible while scrolling), but with a BidPanel sibling
+              // below it the sticky card stays pinned while the BidPanel
+              // scrolls up over it. Drop sticky whenever there's a sibling.
+              bidSummary ? "" : "sticky top-24"
+            }`}
+          >
+            {bidSummary && (
+              <a
+                href="#bid-panel"
+                className="mb-4 flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 bg-[color:var(--color-primary-tint)] border border-[color:var(--color-primary)]/25 hover:border-[color:var(--color-primary)]/45 transition-colors group"
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-[color:var(--color-primary)] radar-pulse-dot flex-none" />
+                  <span className="text-[color:var(--color-primary-600)] font-semibold text-sm truncate">
+                    Accepting bids
+                    {bidSummary.currentHighest !== null && (
+                      <span className="font-mono tabular-nums font-medium ml-1">
+                        · top {npr(bidSummary.currentHighest)}
+                      </span>
+                    )}
+                  </span>
+                </span>
+                <span className="text-[color:var(--color-primary-600)] text-xs mono group-hover:translate-y-0.5 transition-transform">
+                  Place a bid ↓
+                </span>
+              </a>
+            )}
             <div className="flex items-baseline justify-between">
               <div>
                 <div className="font-display text-4xl font-semibold">
@@ -251,6 +327,16 @@ export default async function ListingDetail({
               </div>
             )}
           </div>
+
+          {bidSummary && (
+            <BidPanel
+              listingId={listing.id}
+              initialSummary={bidSummary}
+              viewerId={session?.user?.id ?? null}
+              isOwner={isOwner}
+              predictedRent={predicted}
+            />
+          )}
         </aside>
       </div>
     </div>

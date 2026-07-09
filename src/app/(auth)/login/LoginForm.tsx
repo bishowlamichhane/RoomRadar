@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 
@@ -9,6 +9,12 @@ type Role = "SEEKER" | "OWNER";
 
 export default function LoginForm() {
   const router = useRouter();
+  const search = useSearchParams();
+  // ?callbackUrl=/some/path[#anchor] — used when a user clicks "Place bid"
+  // (or another gated CTA) while logged out. Same-origin paths only.
+  const rawCallback = search.get("callbackUrl");
+  const callbackUrl =
+    rawCallback && rawCallback.startsWith("/") ? rawCallback : null;
   const [role, setRole] = useState<Role>("SEEKER");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +35,8 @@ export default function LoginForm() {
       setError("Invalid email or password.");
       return;
     }
-    router.push(role === "OWNER" ? "/dashboard" : "/listings");
+    const dest = callbackUrl ?? (role === "OWNER" ? "/dashboard" : "/listings");
+    router.push(dest);
     router.refresh();
     // Keep loading true — the destination's loading.tsx picks up the spinner.
   }

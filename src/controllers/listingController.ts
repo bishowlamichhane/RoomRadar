@@ -57,16 +57,36 @@ function toPredictInput(data: ListingInput): PredictInput {
   };
 }
 
+function bidFieldsFromInput(data: ListingInput) {
+  return {
+    biddable: data.biddable ?? false,
+    bidStartPrice: data.bidStartPrice ?? null,
+    bidMinIncrement: data.bidMinIncrement ?? 500,
+    bidsCloseAt:
+      data.bidsCloseAt && data.bidsCloseAt !== ""
+        ? new Date(data.bidsCloseAt)
+        : null,
+  };
+}
+
 export async function createListing(ownerId: string, data: ListingInput) {
   const predicted = predictRent(toPredictInput(data));
+  const {
+    biddable: _b,
+    bidStartPrice: _bs,
+    bidMinIncrement: _bm,
+    bidsCloseAt: _bc,
+    ...rest
+  } = data;
   return prisma.listing.create({
     data: {
-      ...data,
+      ...rest,
       description: data.description || null,
       photoUrl: data.photoUrl || null,
       mediaUrls: data.mediaUrls ?? "[]",
       predictedRent: predicted,
       ownerId,
+      ...bidFieldsFromInput(data),
     },
   });
 }
@@ -82,14 +102,22 @@ export async function updateListing(
   if (existing.ownerId !== requesterId && !isAdmin)
     return { error: "forbidden" as const };
   const predicted = predictRent(toPredictInput(data));
+  const {
+    biddable: _b,
+    bidStartPrice: _bs,
+    bidMinIncrement: _bm,
+    bidsCloseAt: _bc,
+    ...rest
+  } = data;
   const updated = await prisma.listing.update({
     where: { id },
     data: {
-      ...data,
+      ...rest,
       description: data.description || null,
       photoUrl: data.photoUrl || null,
       mediaUrls: data.mediaUrls ?? "[]",
       predictedRent: predicted,
+      ...bidFieldsFromInput(data),
     },
   });
   return { listing: updated };

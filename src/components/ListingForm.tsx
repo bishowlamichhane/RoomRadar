@@ -44,6 +44,10 @@ type FormState = {
   balcony: boolean;
   latitude: number;
   longitude: number;
+  biddable: boolean;
+  bidStartPrice: number | null;
+  bidMinIncrement: number;
+  bidsCloseAt: string; // local datetime-input value or ""
 };
 
 const defaultState: FormState = {
@@ -67,6 +71,10 @@ const defaultState: FormState = {
   balcony: false,
   latitude: AREA_COORDS.Baneshwor.lat,
   longitude: AREA_COORDS.Baneshwor.lng,
+  biddable: false,
+  bidStartPrice: null,
+  bidMinIncrement: 500,
+  bidsCloseAt: "",
 };
 
 export default function ListingForm({
@@ -147,11 +155,16 @@ export default function ListingForm({
     setError(null);
     setSubmitting(true);
     try {
-      const { media, ...rest } = state;
+      const { media, bidsCloseAt, ...rest } = state;
       const payload = {
         ...rest,
         photoUrl: media.find((m) => m.type === "image")?.url ?? "",
         mediaUrls: serializeMedia(media),
+        // datetime-local → ISO 8601 (UTC). Empty stays empty.
+        bidsCloseAt:
+          bidsCloseAt && bidsCloseAt.length > 0
+            ? new Date(bidsCloseAt).toISOString()
+            : "",
       };
       const res = await fetch(
         mode === "create"
@@ -396,6 +409,88 @@ export default function ListingForm({
               </button>
             </div>
           </div>
+        </section>
+
+        <section className="card p-6 space-y-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <div className="mono">◈ Bidding</div>
+              <p className="text-xs text-[color:var(--color-muted)] mt-1 max-w-md">
+                Let seekers place offers on this listing. You&apos;ll review and
+                accept the one that&apos;s right for you — the listed rent above
+                acts as the starting price.
+              </p>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <span className="text-xs mono">Accept bids</span>
+              <input
+                type="checkbox"
+                checked={state.biddable}
+                onChange={(e) => update("biddable", e.target.checked)}
+                className="sr-only peer"
+              />
+              <span className="w-10 h-6 rounded-full bg-black/10 peer-checked:bg-[color:var(--color-primary)] relative transition-colors">
+                <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
+              </span>
+            </label>
+          </div>
+
+          {state.biddable && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="text-sm font-medium">
+                  Starting price (NPR)
+                </label>
+                <input
+                  type="number"
+                  value={state.bidStartPrice ?? ""}
+                  onChange={(e) =>
+                    update(
+                      "bidStartPrice",
+                      e.target.value === "" ? null : +e.target.value,
+                    )
+                  }
+                  placeholder={String(state.rent)}
+                  min={1000}
+                  max={500000}
+                  className="mt-1 w-full border border-black/10 rounded-xl px-3 py-2 text-sm"
+                />
+                <div className="text-[11px] text-[color:var(--color-muted)] mt-1">
+                  Defaults to your listed rent ({npr(state.rent)}).
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">
+                  Min bid step (NPR)
+                </label>
+                <input
+                  type="number"
+                  value={state.bidMinIncrement}
+                  onChange={(e) =>
+                    update("bidMinIncrement", +e.target.value || 500)
+                  }
+                  min={100}
+                  max={50000}
+                  className="mt-1 w-full border border-black/10 rounded-xl px-3 py-2 text-sm"
+                />
+                <div className="text-[11px] text-[color:var(--color-muted)] mt-1">
+                  Each new bid must beat the current highest by at least this.
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Bids close</label>
+                <input
+                  type="datetime-local"
+                  value={state.bidsCloseAt}
+                  onChange={(e) => update("bidsCloseAt", e.target.value)}
+                  className="mt-1 w-full border border-black/10 rounded-xl px-3 py-2 text-sm"
+                />
+                <div className="text-[11px] text-[color:var(--color-muted)] mt-1">
+                  Optional — leave blank to keep bids open until you accept one.
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       </div>
 

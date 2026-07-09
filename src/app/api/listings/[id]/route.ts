@@ -6,6 +6,7 @@ import {
   updateListing,
   deleteListing,
 } from "@/controllers/listingController";
+import { serializeListing } from "@/lib/location";
 
 export async function GET(
   _req: NextRequest,
@@ -15,7 +16,12 @@ export async function GET(
   const listing = await getListing(id);
   if (!listing)
     return NextResponse.json({ error: "not_found" }, { status: 404 });
-  return NextResponse.json(listing);
+  const session = await auth();
+  const viewer = session?.user
+    ? { id: session.user.id, role: session.user.role ?? "SEEKER" }
+    : null;
+  const gated = await serializeListing(listing, viewer);
+  return NextResponse.json(gated);
 }
 
 export async function PATCH(
@@ -45,7 +51,12 @@ export async function PATCH(
       { status: res.error === "not_found" ? 404 : 403 },
     );
   }
-  return NextResponse.json(res.listing);
+  // Editor is the owner or admin — location is unlocked for them.
+  return NextResponse.json({
+    ...res.listing,
+    locationUnlocked: true,
+    locationPrecise: true,
+  });
 }
 
 export async function DELETE(

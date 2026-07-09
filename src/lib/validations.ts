@@ -54,6 +54,47 @@ export const listingSchema = z.object({
     }, "mediaUrls must be a JSON array of {url,type}")
     .optional()
     .default("[]"),
+  biddable: z.coerce.boolean().optional().default(false),
+  bidStartPrice: z.coerce.number().int().min(1000).max(500000).optional().nullable(),
+  bidMinIncrement: z.coerce.number().int().min(100).max(50000).optional().default(500),
+  bidsCloseAt: z
+    .string()
+    .datetime()
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+});
+
+// A seeker places a bid on a listing.
+export const placeBidSchema = z.object({
+  amount: z.coerce.number().int().min(1000).max(1_000_000),
+  message: z.string().max(500).optional().or(z.literal("")),
+  moveInDate: z
+    .string()
+    .datetime()
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+});
+
+// Owner or bidder updates a bid's status.
+export const updateBidSchema = z.object({
+  action: z.enum(["accept", "reject", "withdraw"]),
+});
+
+// Seeker requests a tour on a listing. No payment at this point — the fee is
+// only collected after the owner confirms this specific request.
+export const bookingSchema = z.object({
+  tourDate: z
+    .string()
+    .datetime()
+    .refine((s) => new Date(s).getTime() > Date.now(), "tour must be in the future"),
+});
+
+// Owner (or admin) transitions a booking. Confirm triggers the pay prompt;
+// complete auto-declines any other pending bookings on the same listing.
+export const updateBookingSchema = z.object({
+  action: z.enum(["confirm", "decline", "complete"]),
 });
 
 export const predictSchema = listingSchema.pick({

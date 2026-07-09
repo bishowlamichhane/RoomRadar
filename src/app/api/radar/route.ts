@@ -4,13 +4,20 @@ import { predictRent } from "@/lib/ml/predict";
 import { fairness } from "@/lib/fairPrice";
 import { parseMedia, firstImage } from "@/lib/media";
 import metrics from "@/lib/ml/metrics.json";
+import { auth } from "@/lib/auth";
+import { serializeListings } from "@/lib/location";
 
 export const dynamic = "force-dynamic";
 
 type ComparisonRow = { model: string; mae: number; rmse: number; r2: number };
 
 export async function GET() {
-  const listings = await listListings({});
+  const rawListings = await listListings({});
+  const session = await auth();
+  const viewer = session?.user
+    ? { id: session.user.id, role: session.user.role ?? "SEEKER" }
+    : null;
+  const listings = await serializeListings(rawListings, viewer);
 
   const points = listings.map((l) => {
     const predicted = predictRent({

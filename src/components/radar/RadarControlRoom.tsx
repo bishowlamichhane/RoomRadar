@@ -108,6 +108,7 @@ export default function RadarControlRoom({
       current={current}
       reducedMotion={reducedMotion}
       className={heroMode ? "w-full h-full" : undefined}
+      hideCards={heroMode}
     />
   );
 

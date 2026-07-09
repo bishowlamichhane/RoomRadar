@@ -2,17 +2,22 @@
 
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
-import { useEffect, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { npr } from "@/lib/format";
 import { VERDICT_TONE, VERDICT_LABEL, type RadarPoint } from "./types";
 
 const CENTER: [number, number] = [27.705, 85.33];
-const WAYPOINTS: { lat: number; lng: number; zoom: number }[] = [
-  { lat: 27.705, lng: 85.33, zoom: 12.3 },
-  { lat: 27.7175, lng: 85.311, zoom: 12.6 }, // Kathmandu core
-  { lat: 27.679, lng: 85.317, zoom: 12.7 }, // Lalitpur
-  { lat: 27.672, lng: 85.435, zoom: 12.6 }, // Bhaktapur
+const HERO_ZOOM = 12;
+// Panning only (zoom stays fixed) — tile reloads during zoom changes were the
+// biggest source of visual jitter. A single zoom + panTo is butter smooth.
+const WAYPOINTS: { lat: number; lng: number }[] = [
+  { lat: 27.705, lng: 85.33 }, // valley center
+  { lat: 27.7175, lng: 85.311 }, // Kathmandu core
+  { lat: 27.700, lng: 85.320 }, // midpoint
+  { lat: 27.679, lng: 85.317 }, // Lalitpur
+  { lat: 27.680, lng: 85.380 }, // midpoint
+  { lat: 27.672, lng: 85.435 }, // Bhaktapur
 ];
 
 function IconFix() {
@@ -28,22 +33,40 @@ function IconFix() {
   return null;
 }
 
+const LEG_SECONDS = 10; // constant-speed drift across each waypoint
+
 function Drift({ enabled }: { enabled: boolean }) {
   const map = useMap();
   useEffect(() => {
     if (!enabled) return;
+    // Leaflet's PosAnimation handles the actual motion (GPU CSS transform
+    // + rAF internally). We give it easeLinearity: 1 so speed is constant
+    // (no ease-out crawl) and chain the NEXT leg on the map's own
+    // `moveend` event so the seam between legs is truly zero — no
+    // setInterval drift, no dead time, no overlap.
+    //
+    // The first waypoint is the map's initial center → that first panTo
+    // resolves instantly (Leaflet fires moveend immediately when offset
+    // is zero), which then triggers our chain into the second waypoint.
+    // Net effect: motion starts on the first frame after mount.
+    let cancelled = false;
     let i = 0;
-    const step = () => {
+    const goToNext = () => {
+      if (cancelled) return;
       const wp = WAYPOINTS[i % WAYPOINTS.length];
-      map.flyTo([wp.lat, wp.lng], wp.zoom, {
-        duration: 12,
-        easeLinearity: 0.35,
-      });
       i++;
+      map.panTo([wp.lat, wp.lng], {
+        animate: true,
+        duration: LEG_SECONDS,
+        easeLinearity: 1,
+      });
     };
-    step();
-    const id = window.setInterval(step, 12500);
-    return () => window.clearInterval(id);
+    map.on("moveend", goToNext);
+    goToNext();
+    return () => {
+      cancelled = true;
+      map.off("moveend", goToNext);
+    };
   }, [map, enabled]);
   return null;
 }
@@ -68,6 +91,11 @@ export type LiveRadarMapProps = {
   className?: string;
   /** Suppress the floating "just detected" card stack (used in hero mode). */
   hideCards?: boolean;
+  /**
+   * When true, the map holds still (no flyTo drift). Pips still animate.
+   * Prevents the "hero background jittering" effect on the landing page.
+   */
+  staticView?: boolean;
 };
 
 const DEFAULT_WRAPPER = "w-full h-[420px] md:h-[460px]";
@@ -78,9 +106,16 @@ export default function LiveRadarMap({
   reducedMotion,
   className,
   hideCards,
+  staticView,
 }: LiveRadarMapProps) {
   const router = useRouter();
-  const go = (id: string) => router.push(`/listings/${id}`);
+  // Stable across renders — react-leaflet's <Marker> gets the same
+  // handler ref every time, so with React.memo on PipMarker below it
+  // skips the re-render entirely.
+  const go = useCallback(
+    (id: string) => router.push(`/listings/${id}`),
+    [router],
+  );
   // Rolling stack of the last ~3 "just detected" cards
   const cards = useMemo(() => revealed.slice(-3).reverse(), [revealed]);
 
@@ -120,13 +155,16 @@ export default function LiveRadarMap({
 
       <MapContainer
         center={CENTER}
-        zoom={12.3}
+        zoom={HERO_ZOOM}
         scrollWheelZoom={false}
         zoomControl={false}
         dragging={false}
         doubleClickZoom={false}
         touchZoom={false}
         keyboard={false}
+        zoomSnap={1}
+        zoomAnimation={false}
+        fadeAnimation={false}
         style={{
           height: "100%",
           width: "100%",
@@ -139,14 +177,14 @@ export default function LiveRadarMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        <Drift enabled={!reducedMotion} />
+        <Drift enabled={!reducedMotion && !staticView} />
         {revealed.map((p) => (
           <PipMarker
             key={p.id}
             point={p}
             reducedMotion={reducedMotion}
             isCurrent={current?.id === p.id}
-            onClick={() => go(p.id)}
+            onGo={go}
           />
         ))}
       </MapContainer>
@@ -183,16 +221,18 @@ export default function LiveRadarMap({
   );
 }
 
-function PipMarker({
+// React.memo'd so parent re-renders (every ~3.4s from the reveal loop) don't
+// cascade DOM work into every pip while a pan animation is running.
+const PipMarker = memo(function PipMarker({
   point,
   reducedMotion,
   isCurrent,
-  onClick,
+  onGo,
 }: {
   point: RadarPoint;
   reducedMotion: boolean;
   isCurrent: boolean;
-  onClick: () => void;
+  onGo: (id: string) => void;
 }) {
   const tone = VERDICT_TONE[point.verdict];
   // Regenerate icon so animation replays for the "current" pip; other pips keep a stable icon.
@@ -202,14 +242,18 @@ function PipMarker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [iconKey, tone, reducedMotion],
   );
-  return (
-    <Marker
-      position={[point.lat, point.lng]}
-      icon={icon}
-      eventHandlers={{ click: onClick }}
-    />
+  // Memoise the position tuple so react-leaflet sees a stable prop ref and
+  // doesn't re-sync the underlying L.Marker on every parent render.
+  const position = useMemo(
+    () => [point.lat, point.lng] as [number, number],
+    [point.lat, point.lng],
   );
-}
+  const handlers = useMemo(
+    () => ({ click: () => onGo(point.id) }),
+    [onGo, point.id],
+  );
+  return <Marker position={position} icon={icon} eventHandlers={handlers} />;
+});
 
 function JustDetectedCard({
   point,

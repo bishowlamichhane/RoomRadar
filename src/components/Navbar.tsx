@@ -4,12 +4,20 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
 import Spinner from "@/components/ui/Spinner";
+import NotificationBell from "@/components/NotificationBell";
 
 export default function Navbar() {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const user = session?.user;
+  const role = user?.role;
+  // Only owners (and admins acting as one) get the post-listing + dashboard
+  // affordances. Seekers get "My bids" instead. Logged-out visitors still see
+  // "Post a room" as a marketing CTA — it routes through /login.
+  const canPost = !user || role === "OWNER" || role === "ADMIN";
+  const showOwnerDashboard = role === "OWNER";
+  const showSeekerBids = role === "SEEKER";
 
   function handleSignOut() {
     setSigningOut(true);
@@ -36,15 +44,17 @@ export default function Navbar() {
           <Link href="/results" className="hover:text-[color:var(--color-primary)]">
             How it works
           </Link>
-          <Link href="/listings/new" className="hover:text-[color:var(--color-primary)]">
-            Post a room
-          </Link>
+          {canPost && (
+            <Link href="/listings/new" className="hover:text-[color:var(--color-primary)]">
+              Post a room
+            </Link>
+          )}
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
           {user ? (
             <>
-              {user.role === "ADMIN" && (
+              {role === "ADMIN" && (
                 <Link
                   href="/admin"
                   className="text-sm text-[color:var(--color-primary)] font-medium"
@@ -52,12 +62,31 @@ export default function Navbar() {
                   Admin
                 </Link>
               )}
-              <Link
-                href="/dashboard"
-                className="text-sm text-[color:var(--color-ink)]/80 hover:text-[color:var(--color-primary)]"
-              >
-                Dashboard
-              </Link>
+              {showSeekerBids && (
+                <>
+                  <Link
+                    href="/bids"
+                    className="text-sm text-[color:var(--color-ink)]/80 hover:text-[color:var(--color-primary)]"
+                  >
+                    My bids
+                  </Link>
+                  <Link
+                    href="/bookings"
+                    className="text-sm text-[color:var(--color-ink)]/80 hover:text-[color:var(--color-primary)]"
+                  >
+                    My tours
+                  </Link>
+                </>
+              )}
+              {showOwnerDashboard && (
+                <Link
+                  href="/dashboard"
+                  className="text-sm text-[color:var(--color-ink)]/80 hover:text-[color:var(--color-primary)]"
+                >
+                  Dashboard
+                </Link>
+              )}
+              <NotificationBell />
               <button
                 onClick={handleSignOut}
                 disabled={signingOut}
@@ -109,15 +138,37 @@ export default function Navbar() {
           <Link href="/results" onClick={() => setOpen(false)}>
             How it works
           </Link>
-          <Link href="/listings/new" onClick={() => setOpen(false)}>
-            Post a room
-          </Link>
+          {canPost && (
+            <Link href="/listings/new" onClick={() => setOpen(false)}>
+              Post a room
+            </Link>
+          )}
           {user ? (
             <>
-              <Link href="/dashboard" onClick={() => setOpen(false)}>
-                Dashboard
-              </Link>
-              {user.role === "ADMIN" && (
+              {showSeekerBids && (
+                <>
+                  <Link href="/bids" onClick={() => setOpen(false)}>
+                    My bids
+                  </Link>
+                  <Link href="/bookings" onClick={() => setOpen(false)}>
+                    My tours
+                  </Link>
+                </>
+              )}
+              {showOwnerDashboard && (
+                <>
+                  <Link href="/dashboard" onClick={() => setOpen(false)}>
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/dashboard/bookings"
+                    onClick={() => setOpen(false)}
+                  >
+                    Tour requests
+                  </Link>
+                </>
+              )}
+              {role === "ADMIN" && (
                 <Link href="/admin" onClick={() => setOpen(false)}>
                   Admin
                 </Link>

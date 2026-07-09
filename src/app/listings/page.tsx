@@ -3,6 +3,8 @@ import ListingCard from "@/components/ListingCard";
 import SearchFilters from "@/components/SearchFilters";
 import MapLoader from "@/components/MapLoader";
 import { searchSchema } from "@/lib/validations";
+import { serializeListings } from "@/lib/location";
+import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +28,12 @@ export default async function ListingsPage({
         ? [sp.amenities]
         : undefined,
   });
-  const listings = await listListings(parsed.success ? parsed.data : {});
+  const rawListings = await listListings(parsed.success ? parsed.data : {});
+  const session = await auth();
+  const viewer = session?.user
+    ? { id: session.user.id, role: session.user.role ?? "SEEKER" }
+    : null;
+  const listings = await serializeListings(rawListings, viewer);
 
   const mapListings = listings.map((l) => ({
     id: l.id,

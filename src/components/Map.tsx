@@ -1,6 +1,6 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
 import L from "leaflet";
 import { VALLEY_CENTER } from "@/lib/constants";
 import { npr } from "@/lib/format";
@@ -21,6 +21,10 @@ export type MapProps = {
   center?: { lat: number; lng: number };
   zoom?: number;
   height?: string;
+  // When set, render a shaded circle instead of a marker for the listing's
+  // approximate area. Used on listing-detail pages while the exact location
+  // is still gated behind a paid booking.
+  approxCircle?: { lat: number; lng: number; radiusM: number };
 };
 
 function IconFix() {
@@ -36,7 +40,13 @@ function IconFix() {
   return null;
 }
 
-export default function Map({ listings, center, zoom, height = "100%" }: MapProps) {
+export default function Map({
+  listings,
+  center,
+  zoom,
+  height = "100%",
+  approxCircle,
+}: MapProps) {
   const c = center ?? { lat: VALLEY_CENTER.lat, lng: VALLEY_CENTER.lng };
   const z = zoom ?? VALLEY_CENTER.zoom;
   return (
@@ -52,25 +62,39 @@ export default function Map({ listings, center, zoom, height = "100%" }: MapProp
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {listings.map((l) => (
-          <Marker key={l.id} position={[l.latitude, l.longitude]}>
-            <Popup>
-              <div className="text-sm">
-                <div className="font-semibold">{l.title}</div>
-                <div className="text-xs opacity-70">
-                  {l.area}, {l.city}
+        {approxCircle ? (
+          <Circle
+            center={[approxCircle.lat, approxCircle.lng]}
+            radius={approxCircle.radiusM}
+            pathOptions={{
+              color: "#0e6e6e",
+              fillColor: "#0e6e6e",
+              fillOpacity: 0.18,
+              weight: 2,
+              dashArray: "6 6",
+            }}
+          />
+        ) : (
+          listings.map((l) => (
+            <Marker key={l.id} position={[l.latitude, l.longitude]}>
+              <Popup>
+                <div className="text-sm">
+                  <div className="font-semibold">{l.title}</div>
+                  <div className="text-xs opacity-70">
+                    {l.area}, {l.city}
+                  </div>
+                  <div className="mt-1 font-semibold">{npr(l.rent)}/mo</div>
+                  <a
+                    className="text-[color:var(--color-primary)] underline text-xs"
+                    href={`/listings/${l.id}`}
+                  >
+                    View listing →
+                  </a>
                 </div>
-                <div className="mt-1 font-semibold">{npr(l.rent)}/mo</div>
-                <a
-                  className="text-[color:var(--color-primary)] underline text-xs"
-                  href={`/listings/${l.id}`}
-                >
-                  View listing →
-                </a>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          ))
+        )}
       </MapContainer>
     </div>
   );

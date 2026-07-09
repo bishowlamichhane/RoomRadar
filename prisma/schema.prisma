@@ -9,14 +9,17 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         String    @default("SEEKER")
-  listings     Listing[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  passwordHash  String
+  role          String         @default("SEEKER")
+  listings      Listing[]
+  bids          Bid[]
+  bookings      Booking[]
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Listing {
@@ -44,12 +47,107 @@ model Listing {
   photoUrl          String?
   mediaUrls         String   @default("[]")
   available         Boolean  @default(true)
+
+  // Bidding — a listing can optionally accept bids. Only rows with
+  // biddable=true expose the bid UI. bidStartPrice falls back to `rent`.
+  biddable          Boolean   @default(false)
+  bidStartPrice     Int?
+  bidMinIncrement   Int       @default(500)
+  bidsCloseAt       DateTime?
+
   owner             User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId           String
+  bids              Bid[]
+  bookings          Booking[]
+  commissions       Commission[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   @@index([city])
   @@index([area])
   @@index([roomType])
+  @@index([biddable])
+}
+
+// Bid — one row per placed bid. Status is a string (Postgres-safe without
+// custom enums): PENDING, WINNING, OUTBID, ACCEPTED, REJECTED, WITHDRAWN,
+// EXPIRED. Exactly one bid per listing is WINNING at a time; placing a new
+// higher valid bid flips the previous WINNING to OUTBID in one transaction.
+model Bid {
+  id          String   @id @default(cuid())
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId   String
+  bidder      User     @relation(fields: [bidderId], references: [id], onDelete: Cascade)
+  bidderId    String
+  amount      Int
+  message     String?
+  moveInDate  DateTime?
+  status      String   @default("WINNING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([listingId, status])
+  @@index([bidderId])
+  @@index([listingId, amount])
+}
+
+// Booking — a seeker requests a tour on a listing. No charge at request time.
+// Multiple PENDING bookings can coexist on a listing. Owner confirms one,
+// which prompts that seeker (and only that seeker) to pay the booking fee.
+// Status: PENDING | CONFIRMED | DECLINED | COMPLETED.
+// paymentStatus: UNPAID | AWAITING_PAYMENT | PAID.
+model Booking {
+  id             String       @id @default(cuid())
+  listing        Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId      String
+  seeker         User         @relation(fields: [seekerId], references: [id], onDelete: Cascade)
+  seekerId       String
+  tourDate       DateTime
+  status         String       @default("PENDING")
+  bookingFee     Int
+  paymentStatus  String       @default("UNPAID")
+  paymentRef     String?
+  confirmedAt    DateTime?
+  commission     Commission?
+  notifications  Notification[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([listingId, status])
+  @@index([seekerId])
+  @@index([status, paymentStatus])
+}
+
+// Commission — the platform's 5% fee, recorded on owner confirmation.
+// status: DUE (recorded, not collected) | PAYABLE (booking completed) | WAIVED.
+// Not force-collected — this is the honest business-model line.
+model Commission {
+  id         String   @id @default(cuid())
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId  String   @unique
+  listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId  String
+  amount     Int
+  status     String   @default("DUE")
+  createdAt  DateTime @default(now())
+
+  @@index([listingId])
+  @@index([status])
+}
+
+// Notification — simple in-app inbox for booking events.
+// type: TOUR_REQUEST | TOUR_CONFIRMED_PAY | TOUR_PAID | TOUR_DECLINED.
+model Notification {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  type       String
+  message    String
+  booking    Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId  String?
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
 }

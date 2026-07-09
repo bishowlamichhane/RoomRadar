@@ -98,3 +98,43 @@ export const AREA_COORDS: Record<
 };
 
 export const VALLEY_CENTER = { lat: 27.705, lng: 85.33, zoom: 12 } as const;
+
+// Booking / commission tunables — see CLAUDE_BOOKING.md.
+export const BOOKING_FEE_NPR = 300;
+export const COMMISSION_RATE = 0.05;
+export const CONFIRM_HOLD_HOURS = 24;
+// Radius (metres) of the "approximate area" circle rendered on locked maps.
+export const APPROX_RADIUS_M = 400;
+
+export const BOOKING_STATUS = {
+  PENDING: "PENDING",
+  CONFIRMED: "CONFIRMED",
+  DECLINED: "DECLINED",
+  COMPLETED: "COMPLETED",
+} as const;
+export type BookingStatus = (typeof BOOKING_STATUS)[keyof typeof BOOKING_STATUS];
+
+export const PAYMENT_STATUS = {
+  UNPAID: "UNPAID",
+  AWAITING_PAYMENT: "AWAITING_PAYMENT",
+  PAID: "PAID",
+} as const;
+export type PaymentStatus =
+  (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
+
+export const COMMISSION_STATUS = {
+  DUE: "DUE",
+  PAYABLE: "PAYABLE",
+  WAIVED: "WAIVED",
+} as const;
+export type CommissionStatus =
+  (typeof COMMISSION_STATUS)[keyof typeof COMMISSION_STATUS];
+
+export const NOTIFICATION_TYPE = {
+  TOUR_REQUEST: "TOUR_REQUEST",
+  TOUR_CONFIRMED_PAY: "TOUR_CONFIRMED_PAY",
+  TOUR_PAID: "TOUR_PAID",
+  TOUR_DECLINED: "TOUR_DECLINED",
+} as const;
+export type NotificationType =
+  (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];

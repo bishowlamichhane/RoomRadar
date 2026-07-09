@@ -5,6 +5,7 @@ import {
   listListings,
   createListing,
 } from "@/controllers/listingController";
+import { serializeListings } from "@/lib/location";
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -18,7 +19,12 @@ export async function GET(req: NextRequest) {
   };
   const parsed = searchSchema.safeParse(raw);
   const data = await listListings(parsed.success ? parsed.data : {});
-  return NextResponse.json(data);
+  const session = await auth();
+  const viewer = session?.user
+    ? { id: session.user.id, role: session.user.role ?? "SEEKER" }
+    : null;
+  const gated = await serializeListings(data, viewer);
+  return NextResponse.json(gated);
 }
 
 export async function POST(req: NextRequest) {
@@ -35,5 +41,9 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   const listing = await createListing(session.user.id, parsed.data);
-  return NextResponse.json(listing, { status: 201 });
+  // Owner just created it, so it's unlocked for them by definition.
+  return NextResponse.json(
+    { ...listing, locationUnlocked: true, locationPrecise: true },
+    { status: 201 },
+  );
 }

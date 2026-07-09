@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { listingsByOwner } from "@/controllers/listingController";
+import { listBidsForOwner } from "@/controllers/bidController";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { npr } from "@/lib/format";
@@ -11,8 +12,18 @@ import { parseMedia, firstImage } from "@/lib/media";
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
+  // Owner dashboard is for OWNER (and ADMIN as superuser). Seekers land
+  // on /bids — the equivalent "your activity" hub for them.
+  if (session.user.role === "SEEKER") redirect("/bids");
+  if (session.user.role === "ADMIN") redirect("/admin");
 
-  const listings = await listingsByOwner(session.user.id);
+  const [listings, allBids] = await Promise.all([
+    listingsByOwner(session.user.id),
+    listBidsForOwner(session.user.id),
+  ]);
+  const activeBids = allBids.filter(
+    (b) => b.status === "WINNING" || b.status === "OUTBID",
+  ).length;
   const fairCount = listings.filter((l) => {
     if (!l.predictedRent) return false;
     return fairness(l.rent, l.predictedRent).verdict === "fair";
@@ -34,12 +45,26 @@ export default async function DashboardPage() {
             You have {listings.length} active listing{listings.length === 1 ? "" : "s"} on RoomRadar.
           </p>
         </div>
-        <Link
-          href="/listings/new"
-          className="bg-[color:var(--color-primary)] hover:bg-[color:var(--color-primary-600)] text-white rounded-xl px-5 py-3 text-sm font-semibold whitespace-nowrap"
-        >
-          + Post new listing
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/dashboard/bids"
+            className="border border-black/10 hover:border-black/30 text-[color:var(--color-ink)] rounded-xl px-5 py-3 text-sm font-medium whitespace-nowrap inline-flex items-center gap-2"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 radar-pulse-dot" />
+            Bids inbox
+            {activeBids > 0 && (
+              <span className="ml-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-mono px-2 py-0.5">
+                {activeBids}
+              </span>
+            )}
+          </Link>
+          <Link
+            href="/listings/new"
+            className="bg-[color:var(--color-primary)] hover:bg-[color:var(--color-primary-600)] text-white rounded-xl px-5 py-3 text-sm font-semibold whitespace-nowrap"
+          >
+            + Post new listing
+          </Link>
+        </div>
       </div>
 
       {/* KPI cards */}
@@ -151,6 +176,12 @@ export default async function DashboardPage() {
                   <div className="text-[11px] text-[color:var(--color-muted)] mt-1">
                     Predicted {npr(l.predictedRent)}
                   </div>
+                )}
+                {l.biddable && (
+                  <span className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest rounded-full px-2 py-0.5 bg-emerald-100 text-emerald-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 radar-pulse-dot" />
+                    Accepting bids
+                  </span>
                 )}
               </div>
 
